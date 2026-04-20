@@ -487,12 +487,15 @@ export default {
     },
     nodeClickHandler: function(data, node, tree) {
       console.log(data)
-
+      console.log(data.nextData.length)
+      console.log(this.treeLimit)
       if (data && data.nextData && data.nextData.length > 0) {
+
         const parentNode = node.parent
         let nextData = data.nextData
         if (nextData.length > this.treeLimit) {
           let subData = nextData.splice(0, this.treeLimit)
+          console.log(subData)
           subData.push({
             treeId: '---',
             deviceId: '---',
@@ -506,10 +509,9 @@ export default {
           for (let item of subData) {
             this.$refs.veTree.append(item, parentNode)
           }
-
         } else {
           this.$refs.veTree.remove(data, parentNode)
-          for (let item of subData) {
+          for (let item of nextData) {
             this.$refs.veTree.append(item, parentNode)
           }
         }

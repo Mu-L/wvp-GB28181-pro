@@ -487,7 +487,7 @@ export default {
 
         } else {
           this.$refs.veTree.remove(data, parentNode)
-          for (let item of subData) {
+          for (let item of nextData) {
             this.$refs.veTree.append(item, parentNode)
           }
         }
