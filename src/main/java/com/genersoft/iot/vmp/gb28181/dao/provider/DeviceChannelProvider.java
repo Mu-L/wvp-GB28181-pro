@@ -104,13 +104,11 @@ public class DeviceChannelProvider {
         List<String> channelIds = (List<String>)params.get("channelIds");
         if (channelIds != null && !channelIds.isEmpty()) {
             sqlBuild.append(" AND dc.device_id in (");
-            boolean first = true;
-            for (String id : channelIds) {
-                if (!first) {
+            for (int i = 0; i < channelIds.size(); i++) {
+                if (i > 0) {
                     sqlBuild.append(",");
                 }
-                sqlBuild.append(id);
-                first = false;
+                sqlBuild.append("#{channelIds[").append(i).append("]}");
             }
             sqlBuild.append(" )");
         }

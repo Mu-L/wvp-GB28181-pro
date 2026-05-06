@@ -145,7 +145,7 @@ public interface DeviceChannelMapper {
             " LEFT JOIN wvp_device de ON  dc.data_device_id = de.id " +
             " WHERE dc.data_type = 1 " +
             " <if test='deviceId != null'> AND de.device_id = #{deviceId} </if> " +
-            " <if test='query != null'> AND (dc.device_id LIKE '%${query}%' OR dc.name LIKE '%${query}%' OR dc.name LIKE '%${query}%')</if> " +
+            " <if test='query != null'> AND (dc.device_id LIKE concat('%',#{query},'%') OR dc.name LIKE concat('%',#{query},'%') OR dc.name LIKE concat('%',#{query},'%'))</if> " +
             " <if test='parentChannelId != null'> AND dc.parent_id=#{parentChannelId} </if> " +
             " <if test='online == true' > AND dc.status='ON'</if>" +
             " <if test='online == false' > AND dc.status='OFF'</if>" +

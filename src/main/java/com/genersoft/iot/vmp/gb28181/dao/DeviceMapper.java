@@ -173,7 +173,7 @@ public interface DeviceMapper {
             "media_server_id,"+
             "(SELECT count(0) FROM wvp_device_channel dc WHERE dc.data_type = #{dataType} and dc.data_device_id= de.id) as channel_count " +
             "FROM wvp_device de" +
-            "<if test='online != null'> where de.on_line=${online}</if>"+
+            "<if test='online != null'> where de.on_line=#{online}</if>"+
             " order by de.create_time desc "+
             " </script>"
     )
@@ -366,7 +366,7 @@ public interface DeviceMapper {
             ",(SELECT count(0) FROM wvp_device_channel dc WHERE dc.data_type = #{dataType} and dc.data_device_id= de.id) as channel_count " +
             " FROM wvp_device de" +
             " where 1 = 1 "+
-            " <if test='status != null'> AND de.on_line=${status}</if>"+
+            " <if test='status != null'> AND de.on_line=#{status}</if>"+
             " <if test='query != null'> AND (" +
             " coalesce(custom_name, name) LIKE concat('%',#{query},'%') escape '/' " +
             " OR device_id LIKE concat('%',#{query},'%') escape '/' " +

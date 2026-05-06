@@ -19,7 +19,7 @@ public class StreamProxyProvider {
     }
 
     public String select(Map<String, Object> params ){
-        return getBaseSelectSql() + " WHERE st.id = " + params.get("id");
+        return getBaseSelectSql() + " WHERE st.id = #{id}";
     }
 
     public String selectForPushingInMediaServer(Map<String, Object> params ){
@@ -27,8 +27,7 @@ public class StreamProxyProvider {
     }
 
     public String selectOneByAppAndStream(Map<String, Object> params ){
-        return getBaseSelectSql() + String.format(" WHERE st.app='%s' AND st.stream='%s' order by st.create_time desc",
-                params.get("app"), params.get("stream"));
+        return getBaseSelectSql() + " WHERE st.app=#{app} AND st.stream=#{stream} order by st.create_time desc";
     }
 
     public String selectAll(Map<String, Object> params ){
@@ -36,15 +35,11 @@ public class StreamProxyProvider {
         sqlBuild.append(getBaseSelectSql());
         sqlBuild.append(" WHERE 1=1 ");
         if (params.get("query") != null) {
-            sqlBuild.append(" AND ")
-                    .append(" (")
-                    .append(" st.app LIKE ").append("'%").append(params.get("query")).append("%' escape '/'")
-                    .append(" OR")
-                    .append(" st.stream LIKE ").append("'%").append(params.get("query")).append("%' escape '/'")
-                    .append(" OR")
-                    .append(" wdc.gb_device_id LIKE ").append("'%").append(params.get("query")).append("%' escape '/'")
-                    .append(" OR")
-                    .append(" wdc.gb_name LIKE ").append("'%").append(params.get("query")).append("%' escape '/'")
+            sqlBuild.append(" AND (")
+                    .append(" st.app LIKE concat('%',#{query},'%') escape '/'")
+                    .append(" OR st.stream LIKE concat('%',#{query},'%') escape '/'")
+                    .append(" OR wdc.gb_device_id LIKE concat('%',#{query},'%') escape '/'")
+                    .append(" OR wdc.gb_name LIKE concat('%',#{query},'%') escape '/'")
                     .append(" )")
             ;
         }
@@ -57,7 +52,7 @@ public class StreamProxyProvider {
             }
         }
         if (params.get("mediaServerId") != null) {
-            sqlBuild.append(" AND st.media_server_id='").append(params.get("mediaServerId")).append("'");
+            sqlBuild.append(" AND st.media_server_id=#{mediaServerId}");
         }
         sqlBuild.append(" order by st.create_time desc");
         return sqlBuild.toString();

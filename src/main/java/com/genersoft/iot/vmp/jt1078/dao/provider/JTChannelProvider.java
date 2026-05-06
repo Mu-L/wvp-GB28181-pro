@@ -27,9 +27,7 @@ public class JTChannelProvider {
         sqlBuild.append(BASE_SQL);
         sqlBuild.append(" WHERE jc.terminal_db_id = #{terminalDbId} ");
         if (params.get("query") != null) {
-            sqlBuild.append(" AND ")
-                    .append(" jc.name LIKE ").append("'%").append(params.get("query")).append("%'")
-            ;
+            sqlBuild.append(" AND jc.name LIKE concat('%',#{query},'%')");
         }
         sqlBuild.append(" ORDER BY jc.channel_id ");
         return sqlBuild.toString();
