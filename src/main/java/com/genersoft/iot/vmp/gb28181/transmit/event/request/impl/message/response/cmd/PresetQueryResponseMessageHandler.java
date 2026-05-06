@@ -29,6 +29,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.DelayQueue;
 import java.util.concurrent.TimeUnit;
 
+import static com.genersoft.iot.vmp.gb28181.utils.XmlUtil.getInteger;
 import static com.genersoft.iot.vmp.gb28181.utils.XmlUtil.getText;
 
 /**
@@ -81,7 +82,8 @@ public class PresetQueryResponseMessageHandler extends SIPRequestProcessorParent
                 }
                 return;
             }
-            int num = Integer.parseInt(presetListNumElement.attributeValue("Num"));
+        	Integer sumNum = getInteger(rootElement, "SumNum");
+        	int	num = sumNum == null ? Integer.parseInt(presetListNumElement.attributeValue("Num")) : sumNum.intValue();
             List<Preset> presetQuerySipReqList = new ArrayList<>();
             if (num > 0) {
                 for (Iterator<Element> presetIterator = presetListNumElement.elementIterator(); presetIterator.hasNext(); ) {
@@ -102,7 +104,7 @@ public class PresetQueryResponseMessageHandler extends SIPRequestProcessorParent
                 }
             }
             String sn = getText(element, "SN");
-            addCatch(cmdType + "_" + sn, num,  rootElement, presetQuerySipReqList);
+            addCatch(cmdType + "_" + sn, num, rootElement, presetQuerySipReqList);
             try {
                 responseAck(request, Response.OK);
             } catch (InvalidArgumentException | ParseException | SipException e) {
