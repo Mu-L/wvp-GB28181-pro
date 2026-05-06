@@ -295,7 +295,7 @@ public class jt1078PlayServiceImpl implements Ijt1078PlayService {
             return;
         }
         // 补充鉴权参数
-        receiveRtpServerService.addAuthenticateInfo(streamId, streamReplace, !channel.isHasAudio(), jt1078Config.getRecord(), null);
+        receiveRtpServerService.addAuthenticateInfo(streamId, streamReplace, channel.isHasAudio(), jt1078Config.getRecord(), null);
 
         log.info("[JT-点播] phoneNumber： {}， channelId： {}，IP: {}, 端口： {}", phoneNumber, channelId, mediaServer.getSdpIp(), port);
         J9101 j9101 = new J9101();
@@ -514,7 +514,7 @@ public class jt1078PlayServiceImpl implements Ijt1078PlayService {
         log.info("[JT-回放] logInfo： {}， 端口： {}", logInfo, port);
 
         // 补充鉴权参数
-        receiveRtpServerService.addAuthenticateInfo(streamId, streamReplace, !channel.isHasAudio(), jt1078Config.getRecord(), null);
+        receiveRtpServerService.addAuthenticateInfo(streamId, streamReplace, channel.isHasAudio(), jt1078Config.getRecord(), null);
 
         J9201 j9201 = new J9201();
         j9201.setChannel(channelId);

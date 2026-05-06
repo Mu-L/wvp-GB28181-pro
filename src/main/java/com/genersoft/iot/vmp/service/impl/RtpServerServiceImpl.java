@@ -174,7 +174,7 @@ public class RtpServerServiceImpl implements IReceiveRtpServerService {
             ssrcInfo.setAllocatedSsrc(ssrc);
         }
         openRtpServer(mediaServer, ssrcInfo, checkSsrc, !channel.isHasAudio(), false, tcpMode, callback);
-        addAuthenticateInfo(streamId, streamReplace, !channel.isHasAudio(),  record, null);
+        addAuthenticateInfo(streamId, streamReplace, channel.isHasAudio(),  record, null);
         return ssrcInfo;
     }
 
@@ -214,7 +214,7 @@ public class RtpServerServiceImpl implements IReceiveRtpServerService {
         SSRCInfo ssrcInfo = new SSRCInfo(0, ssrc, MediaStreamUtil.RTP_APP, streamReplace != null ? streamReplace : streamId);
         ssrcInfo.setAllocatedSsrc(ssrc);
         openRtpServer(mediaServer, ssrcInfo, checkSsrc, !channel.isHasAudio(), false, tcpMode, callback);
-        addAuthenticateInfo(streamId, streamReplace,  !channel.isHasAudio(), false,null);
+        addAuthenticateInfo(streamId, streamReplace,  channel.isHasAudio(), false,null);
         return ssrcInfo;
     }
 
@@ -260,7 +260,7 @@ public class RtpServerServiceImpl implements IReceiveRtpServerService {
 
         long difference = DateUtil.getDifference(startTime, endTime) / 1000;
 
-        addAuthenticateInfo(streamId, null, !channel.isHasAudio(), true,  (int) difference);
+        addAuthenticateInfo(streamId, null, channel.isHasAudio(), true,  (int) difference);
         return ssrcInfo;
     }
 
