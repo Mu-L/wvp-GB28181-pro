@@ -8,10 +8,9 @@ import com.genersoft.iot.vmp.gb28181.transmit.ISIPProcessorObserver;
 import com.genersoft.iot.vmp.utils.EnvUtil;
 import gov.nist.javax.sip.SipProviderImpl;
 import gov.nist.javax.sip.SipStackImpl;
+import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.CommandLineRunner;
-import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.util.ObjectUtils;
 
@@ -24,8 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 @Component
-@Order(value=10)
-public class SipLayer implements CommandLineRunner {
+public class SipLayer{
 
 	@Autowired
 	private SipConfig sipConfig;
@@ -40,8 +38,8 @@ public class SipLayer implements CommandLineRunner {
 	private final Map<String, SipProviderImpl> udpSipProviderMap = new ConcurrentHashMap<>();
 	private final List<String> monitorIps = new ArrayList<>();
 
-	@Override
-	public void run(String... args) {
+	@PostConstruct
+	public void onApplicationReady(){
 		if (ObjectUtils.isEmpty(sipConfig.getIp())) {
 			try {
 				// 获得本机的所有网络接口

@@ -43,9 +43,8 @@ import gov.nist.javax.sip.message.SIPResponse;
 import jakarta.validation.constraints.NotNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
-import org.springframework.core.annotation.Order;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -65,8 +64,7 @@ import java.util.concurrent.TimeUnit;
  */
 @Slf4j
 @Service
-@Order(value=16)
-public class DeviceServiceImpl implements IDeviceService, CommandLineRunner {
+public class DeviceServiceImpl implements IDeviceService {
 
     @Autowired
     private ISIPCommander sipCommander;
@@ -129,8 +127,8 @@ public class DeviceServiceImpl implements IDeviceService, CommandLineRunner {
         return deviceMapper.getDeviceByDeviceId(deviceId);
     }
 
-    @Override
-    public void run(String... args) throws Exception {
+    @EventListener(ApplicationReadyEvent.class)
+    public void onApplicationReady(){
 
         // 清理数据库不存在但是 redis 中存在的数据
         List<Device> devicesInDb = getAll();

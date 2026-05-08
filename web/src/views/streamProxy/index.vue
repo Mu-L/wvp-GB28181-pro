@@ -255,11 +255,8 @@ export default {
     },
     stopPlay: function(row) {
       this.$store.dispatch('streamProxy/stopPlay', row.id)
-        .then((data) => {
-          this.$refs.devicePlayer.openDialog('streamPlay', null, null, {
-            streamInfo: data,
-            hasAudio: true
-          })
+        .then(() => {
+          this.getStreamProxyList()
         })
         .catch((error) => {
           this.$message({

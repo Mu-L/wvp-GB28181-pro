@@ -39,9 +39,8 @@ import com.github.pagehelper.PageInfo;
 import gov.nist.javax.sip.message.SIPResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
-import org.springframework.core.annotation.Order;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -62,8 +61,7 @@ import java.util.concurrent.TimeUnit;
  */
 @Slf4j
 @Service
-@Order(value=15)
-public class PlatformServiceImpl implements IPlatformService, CommandLineRunner {
+public class PlatformServiceImpl implements IPlatformService {
 
     @Autowired
     private PlatformMapper platformMapper;
@@ -116,8 +114,8 @@ public class PlatformServiceImpl implements IPlatformService, CommandLineRunner 
     @Autowired
     private PlatformStatusTaskRunner statusTaskRunner;
 
-    @Override
-    public void run(String... args) throws Exception {
+    @EventListener(ApplicationReadyEvent.class)
+    public void onApplicationReady(){
 
         // 查找国标推流
         List<SendRtpInfo> sendRtpItems = redisCatchStorage.queryAllSendRTPServer();

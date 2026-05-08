@@ -6,7 +6,8 @@ import com.genersoft.iot.vmp.gb28181.service.IGroupService;
 import com.genersoft.iot.vmp.gb28181.service.IRegionService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -21,7 +22,7 @@ import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Component
-public class CatalogDataManager implements CommandLineRunner {
+public class CatalogDataManager{
 
     @Autowired
     private IDeviceChannelService deviceChannelService;
@@ -209,8 +210,8 @@ public class CatalogDataManager implements CommandLineRunner {
         return false;
     }
 
-    @Override
-    public void run(String... args) throws Exception {
+    @EventListener(ApplicationReadyEvent.class)
+    public void onApplicationReady(){
         // 启动时清理旧的数据
         redisTemplate.delete(key);
     }

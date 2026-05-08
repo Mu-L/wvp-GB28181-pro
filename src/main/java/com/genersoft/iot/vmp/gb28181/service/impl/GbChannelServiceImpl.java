@@ -34,7 +34,8 @@ import org.locationtech.jts.geom.Point;
 import org.springframework.beans.BeanWrapper;
 import org.springframework.beans.BeanWrapperImpl;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -49,7 +50,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 @Slf4j
 @Service
-public class GbChannelServiceImpl implements IGbChannelService, CommandLineRunner {
+public class GbChannelServiceImpl implements IGbChannelService {
 
     @Autowired
     private EventPublisher eventPublisher;
@@ -81,8 +82,8 @@ public class GbChannelServiceImpl implements IGbChannelService, CommandLineRunne
     private final GeometryFactory geometryFactory = new GeometryFactory();
 
 
-    @Override
-    public void run(String... args) throws Exception {
+    @EventListener(ApplicationReadyEvent.class)
+    public void onApplicationReady() {
         // 启动时重新发布抽稀图层
         List<CommonGBChannel> channelList = commonGBChannelMapper.queryAllWithPosition();
         Map<Integer, List<CommonGBChannel>> zoomCameraMap = new ConcurrentHashMap<>();

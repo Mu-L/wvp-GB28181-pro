@@ -30,12 +30,12 @@ import com.genersoft.iot.vmp.vmanager.bean.ErrorCode;
 import com.genersoft.iot.vmp.vmanager.bean.WVPResult;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
-import jakarta.annotation.PostConstruct;
 import jakarta.servlet.ServletOutputStream;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.ftpserver.usermanager.impl.BaseUser;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.annotation.Async;
@@ -89,9 +89,9 @@ public class jt1078ServiceImpl implements Ijt1078Service {
     @Autowired
     private FtpDownloadManager downloadManager;
 
-    // 服务启动后五分钟内没有尽量连接的设备设置为离线
-    @PostConstruct
-    public void init(){
+    // 服务启动后五分钟内没有连接的设备设置为离线
+    @EventListener(ApplicationReadyEvent.class)
+    public void onApplicationReady(){
         // 检查session与在线终端是是否对应 不对应则设置终端离线
         List<JTDevice> deviceList = jtDeviceMapper.getDeviceList(null, true);
         if (deviceList.isEmpty()) {

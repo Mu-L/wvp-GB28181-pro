@@ -7,9 +7,9 @@ import com.genersoft.iot.vmp.media.event.mediaServer.MediaServerChangeEvent;
 import com.genersoft.iot.vmp.media.service.IMediaServerService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.core.annotation.Order;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -19,8 +19,7 @@ import java.util.List;
  */
 @Slf4j
 @Component
-@Order(value=12)
-public class MediaServerConfig implements CommandLineRunner {
+public class MediaServerConfig{
 
     @Autowired
     private ApplicationEventPublisher applicationEventPublisher;
@@ -35,8 +34,8 @@ public class MediaServerConfig implements CommandLineRunner {
     private UserSetting userSetting;
 
 
-    @Override
-    public void run(String... strings) throws Exception {
+    @EventListener(ApplicationReadyEvent.class)
+    public void onApplicationReady(){
         // 清理所有在线节点的缓存信息
         mediaServerService.clearMediaServerForOnline();
         MediaServer mediaSerItemInConfig = mediaConfig.buildMediaSer();
