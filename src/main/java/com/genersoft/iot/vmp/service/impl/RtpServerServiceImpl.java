@@ -409,7 +409,10 @@ public class RtpServerServiceImpl implements IReceiveRtpServerService {
         hookResultForOnPublish.setStream_replace(streamReplace);
         hookResultForOnPublish.setEnable_audio(enableAudio);
         hookResultForOnPublish.setEnable_mp4(enableMp4);
-        hookResultForOnPublish.setMp4_max_second(mp4MaxSecond + 10);
+        if (mp4MaxSecond != null) {
+            // mp4MaxSecond 需要比实际的流时长略长一些，避免因为流时长超过mp4MaxSecond而生成文件切片
+            hookResultForOnPublish.setMp4_max_second(mp4MaxSecond + 10);
+        }
 
         String key = String.format("%s:%s", VideoManagerConstants.RTP_AUTHENTICATE, streamId);
         // 存储认证信息，过期时间为60秒， 过期则无法通过认证
