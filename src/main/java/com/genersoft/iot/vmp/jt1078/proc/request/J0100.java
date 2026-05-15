@@ -61,9 +61,17 @@ public class J0100 extends Re {
             buf.readBytes(bytes5);
             device.setMakerId(new String(bytes5).trim());
 
-            byte[] bytes20 = new byte[20];
-            buf.readBytes(bytes20);
-            device.setModel(new String(bytes20).trim());
+
+            if (buf.readableBytes() < 29) {
+                // 按照2011解析
+                byte[] bytes8 = new byte[8];
+                buf.readBytes(bytes8);
+                device.setModel(new String(bytes8).trim());
+            }else {
+                byte[] bytes20 = new byte[20];
+                buf.readBytes(bytes20);
+                device.setModel(new String(bytes20).trim());
+            }
 
             byte[] bytes7 = new byte[7];
             buf.readBytes(bytes7);
