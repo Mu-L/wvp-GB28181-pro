@@ -9,7 +9,7 @@ import com.genersoft.iot.vmp.conf.exception.ControllerException;
 import com.genersoft.iot.vmp.gb28181.bean.*;
 import com.genersoft.iot.vmp.gb28181.dao.DeviceChannelMapper;
 import com.genersoft.iot.vmp.gb28181.dao.DeviceMapper;
-import com.genersoft.iot.vmp.gb28181.dao.DeviceMobilePositionMapper;
+import com.genersoft.iot.vmp.gb28181.dao.MobilePositionMapper;
 import com.genersoft.iot.vmp.gb28181.dao.PlatformChannelMapper;
 import com.genersoft.iot.vmp.gb28181.event.EventPublisher;
 import com.genersoft.iot.vmp.gb28181.event.record.RecordInfoEndEvent;
@@ -19,7 +19,6 @@ import com.genersoft.iot.vmp.gb28181.service.IInviteStreamService;
 import com.genersoft.iot.vmp.gb28181.service.IPlatformChannelService;
 import com.genersoft.iot.vmp.gb28181.transmit.cmd.ISIPCommander;
 import com.genersoft.iot.vmp.gb28181.utils.SipUtils;
-import com.genersoft.iot.vmp.service.bean.Alarm;
 import com.genersoft.iot.vmp.service.bean.ErrorCallback;
 import com.genersoft.iot.vmp.service.redisMsg.IRedisRpcPlayService;
 import com.genersoft.iot.vmp.storager.IRedisCatchStorage;
@@ -34,6 +33,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.extern.slf4j.Slf4j;
 import org.dom4j.Element;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -75,7 +75,7 @@ public class DeviceChannelServiceImpl implements IDeviceChannelService {
     private DeviceMapper deviceMapper;
 
     @Autowired
-    private DeviceMobilePositionMapper deviceMobilePositionMapper;
+    private MobilePositionMapper deviceMobilePositionMapper;
 
     @Autowired
     private UserSetting userSetting;
@@ -99,7 +99,7 @@ public class DeviceChannelServiceImpl implements IDeviceChannelService {
      * 监听录像查询结束事件
      */
     @Async
-    @org.springframework.context.event.EventListener
+    @EventListener
     public void onApplicationEvent(RecordInfoEndEvent event) {
         SynchronousQueue<RecordInfo> queue = topicSubscribers.get("record" + event.getRecordInfo().getSn());
         if (queue != null) {
@@ -107,8 +107,6 @@ public class DeviceChannelServiceImpl implements IDeviceChannelService {
         }
     }
 
-    @Autowired
-    private ISIPCommander cmder;
 
 
     @Override
@@ -293,7 +291,7 @@ public class DeviceChannelServiceImpl implements IDeviceChannelService {
                 deviceChannel.getName(), deviceChannel.getDeviceId());
         String cmdString = getText(rootElement, type.getVal());
         try {
-            cmder.fronEndCmd(device, deviceChannel.getDeviceId(), cmdString, errorResult->{
+            commander.fronEndCmd(device, deviceChannel.getDeviceId(), cmdString, errorResult->{
                         callback.run(errorResult.statusCode, errorResult.msg, null);
                     }, errorResult->{
                         callback.run(errorResult.statusCode, errorResult.msg, null);
@@ -659,5 +657,26 @@ public class DeviceChannelServiceImpl implements IDeviceChannelService {
         DeviceChannel deviceChannel = getOneForSourceById(channel.getGbId());
         queryRecordInfo(device, deviceChannel, startTime, endTime, callback);
 
+    }
+
+    @Override
+    public Map<String, DeviceChannel> getAllForMobilePosition(List<DeviceMobilePosition> mobilePositionList) {
+        return channelMapper.getAllForMobilePosition(mobilePositionList.get(0).getDevice().getId(), mobilePositionList);
+    }
+
+    @Override
+    @Async
+    @Transactional
+    public void asyncBatchChannelPosition(Collection<DeviceChannel> channels) {
+        // 批量更新通道位置信息
+        int limitCount = 500;
+        List<DeviceChannel> channelList = new ArrayList<>(channels);
+        if (!channelList.isEmpty()) {
+            for (int i = 0; i < channelList.size(); i += limitCount) {
+                int end = Math.min(i + limitCount, channelList.size());
+                List<DeviceChannel> batchList = channelList.subList(i, end);
+                channelMapper.batchUpdatePosition(batchList);
+            }
+        }
     }
 }

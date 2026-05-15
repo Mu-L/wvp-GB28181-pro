@@ -1,32 +1,28 @@
 package com.genersoft.iot.vmp.gb28181.transmit.event.request.impl.message.notify.cmd;
 
+import com.genersoft.iot.vmp.conf.UserSetting;
 import com.genersoft.iot.vmp.gb28181.bean.*;
-import com.genersoft.iot.vmp.gb28181.service.IDeviceChannelService;
+import com.genersoft.iot.vmp.gb28181.event.EventPublisher;
 import com.genersoft.iot.vmp.gb28181.transmit.event.request.SIPRequestProcessorParent;
 import com.genersoft.iot.vmp.gb28181.transmit.event.request.impl.message.IMessageHandler;
 import com.genersoft.iot.vmp.gb28181.transmit.event.request.impl.message.notify.NotifyMessageHandler;
-import com.genersoft.iot.vmp.gb28181.utils.NumericUtil;
-import com.genersoft.iot.vmp.gb28181.utils.SipUtils;
-import com.genersoft.iot.vmp.utils.DateUtil;
 import gov.nist.javax.sip.message.SIPRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.dom4j.DocumentException;
 import org.dom4j.Element;
 import org.springframework.beans.factory.InitializingBean;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.task.TaskExecutor;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import org.springframework.util.ObjectUtils;
 
 import javax.sip.InvalidArgumentException;
 import javax.sip.RequestEvent;
 import javax.sip.SipException;
 import javax.sip.message.Response;
 import java.text.ParseException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
-
-import static com.genersoft.iot.vmp.gb28181.utils.XmlUtil.getText;
 
 /**
  * 移动设备位置数据通知，设备主动发起，不需要上级订阅
@@ -36,101 +32,88 @@ import static com.genersoft.iot.vmp.gb28181.utils.XmlUtil.getText;
 @RequiredArgsConstructor
 public class MobilePositionNotifyMessageHandler extends SIPRequestProcessorParent implements InitializingBean, IMessageHandler {
 
-    private final String cmdType = "MobilePosition";
+    private final NotifyMessageHandler notifyMessageHandler;
 
-    @Autowired
-    private NotifyMessageHandler notifyMessageHandler;
+    private final ConcurrentLinkedQueue<HandlerCatchData> taskQueue = new ConcurrentLinkedQueue<>();
 
-    @Autowired
-    private IDeviceChannelService deviceChannelService;
+    private final EventPublisher eventPublisher;
 
-    private ConcurrentLinkedQueue<SipMsgInfo> taskQueue = new ConcurrentLinkedQueue<>();
+    private final UserSetting userSetting;
 
-    @Autowired
-    private TaskExecutor taskExecutor;
 
     @Override
     public void afterPropertiesSet() throws Exception {
+        String cmdType = "MobilePosition";
         notifyMessageHandler.addHandler(cmdType, this);
     }
 
+
     @Override
     public void handForDevice(RequestEvent evt, Device device, Element rootElement) {
-
-        boolean isEmpty = taskQueue.isEmpty();
-        taskQueue.offer(new SipMsgInfo(evt, device, rootElement));
+        if (taskQueue.size() >= userSetting.getMaxNotifyCountQueue()) {
+            log.error("[message-notify-移动位置] 待处理消息队列已满 {}，返回486 BUSY_HERE", userSetting.getMaxNotifyCountQueue());
+            return;
+        }
+        taskQueue.offer(new HandlerCatchData(evt, device, rootElement));
         // 回复200 OK
         try {
             responseAckAsync((SIPRequest) evt.getRequest(), Response.OK);
         } catch (SipException | InvalidArgumentException | ParseException e) {
             log.error("[命令发送失败] 移动位置通知回复: {}", e.getMessage());
         }
-        if (isEmpty) {
-            taskExecutor.execute(() -> {
-                while (!taskQueue.isEmpty()) {
-                    SipMsgInfo sipMsgInfo = taskQueue.poll();
+
+    }
+    @Scheduled(fixedDelay = 400)   //每400毫秒执行一次
+    @Async
+    public void executeTaskQueue(){
+        if (taskQueue.isEmpty()) {
+            return;
+        }
+        List<HandlerCatchData> handlerCatchDataList = new ArrayList<>();
+        int size = taskQueue.size();
+        for (int i = 0; i < size; i++) {
+            HandlerCatchData poll = taskQueue.poll();
+            if (poll != null) {
+                handlerCatchDataList.add(poll);
+            }
+        }
+        if (handlerCatchDataList.isEmpty()) {
+            return;
+        }
+        List<DeviceMobilePosition> mobilePositionList = new ArrayList<>();
+        for (HandlerCatchData take : handlerCatchDataList) {
+            if (take == null) {
+                continue;
+            }
+            Device device = take.getDevice();
+            try {
+                Element rootElementAfterCharset = getRootElement(take.getEvt(), device.getCharset());
+                if (rootElementAfterCharset == null) {
+                    log.warn("[移动位置通知] {}处理失败，未识别到信息体", device.getDeviceId());
+                    continue;
+                }
+                List<DeviceMobilePosition> mobilePositions = DeviceMobilePosition.decode(device, rootElementAfterCharset);
+                for (DeviceMobilePosition mobilePosition : mobilePositions) {
                     try {
-                        Element rootElementAfterCharset = getRootElement(sipMsgInfo.getEvt(), sipMsgInfo.getDevice().getCharset());
-                        if (rootElementAfterCharset == null) {
-                            log.warn("[移动位置通知] {}处理失败，未识别到信息体", device.getDeviceId());
-                            continue;
-                        }
-                        String channelId = getText(rootElementAfterCharset, "DeviceID");
-                        DeviceChannel deviceChannel = deviceChannelService.getOne(device.getDeviceId(), channelId);
-                        if (deviceChannel == null) {
-                            log.warn("[解析移动位置通知] 未找到通道：{}/{}", device.getDeviceId(), channelId);
-                            continue;
-                        }
-
-                        MobilePosition mobilePosition = new MobilePosition();
-                        mobilePosition.setCreateTime(DateUtil.getNow());
-                        if (!ObjectUtils.isEmpty(sipMsgInfo.getDevice().getName())) {
-                            mobilePosition.setDeviceName(sipMsgInfo.getDevice().getName());
-                        }
-                        mobilePosition.setDeviceId(sipMsgInfo.getDevice().getDeviceId());
-
-                        mobilePosition.setChannelId(deviceChannel.getId());
-                        mobilePosition.setChannelDeviceId(deviceChannel.getDeviceId());
-                        String time = getText(rootElementAfterCharset, "Time");
-                        if (ObjectUtils.isEmpty(time)){
-                            mobilePosition.setTime(DateUtil.getNow());
-                        }else {
-                            mobilePosition.setTime(SipUtils.parseTime(time));
-                        }
-                        mobilePosition.setLongitude(Double.parseDouble(getText(rootElementAfterCharset, "Longitude")));
-                        mobilePosition.setLatitude(Double.parseDouble(getText(rootElementAfterCharset, "Latitude")));
-                        if (NumericUtil.isDouble(getText(rootElementAfterCharset, "Speed"))) {
-                            mobilePosition.setSpeed(Double.parseDouble(getText(rootElementAfterCharset, "Speed")));
-                        } else {
-                            mobilePosition.setSpeed(0.0);
-                        }
-                        if (NumericUtil.isDouble(getText(rootElementAfterCharset, "Direction"))) {
-                            mobilePosition.setDirection(Double.parseDouble(getText(rootElementAfterCharset, "Direction")));
-                        } else {
-                            mobilePosition.setDirection(0.0);
-                        }
-                        if (NumericUtil.isDouble(getText(rootElementAfterCharset, "Altitude"))) {
-                            mobilePosition.setAltitude(Double.parseDouble(getText(rootElementAfterCharset, "Altitude")));
-                        } else {
-                            mobilePosition.setAltitude(0.0);
-                        }
-                        mobilePosition.setReportSource("Mobile Position");
-
-                        // 更新device channel 的经纬度
-                        deviceChannel.setLongitude(mobilePosition.getLongitude());
-                        deviceChannel.setLatitude(mobilePosition.getLatitude());
-                        deviceChannel.setGpsTime(mobilePosition.getTime());
-
-                        deviceChannelService.updateChannelGPS(device, deviceChannel, mobilePosition);
-
-                    } catch (DocumentException e) {
+                        log.info("[收到移动位置订阅通知]：{}/{}->{}.{}, 时间： {}", device.getDeviceId(), mobilePosition.getChannelDeviceId(),
+                                mobilePosition.getLongitude(), mobilePosition.getLatitude(), mobilePosition.getTimestamp());
+                        mobilePositionList.add(mobilePosition);
+                    }catch (Exception e) {
                         log.error("未处理的异常 ", e);
-                    } catch (Exception e) {
-                        log.warn("[移动位置通知] 发现未处理的异常, \r\n{}", evt.getRequest());
-                        log.error("[移动位置通知] 异常内容： ", e);
                     }
                 }
-            });
+            }catch (Exception e) {
+                log.warn("[移动位置通知] 发现未处理的异常, \r\n{}", take.getEvt().getRequest());
+                log.error("[移动位置通知] 异常内容： ", e);
+            }
+        }
+        // 向关联了该通道并且开启移动位置订阅的上级平台发送移动位置订阅消息
+        if (!mobilePositionList.isEmpty()) {
+            try {
+                eventPublisher.mobilePositionsEventPublish(mobilePositionList);
+            }catch (Exception e) {
+                log.error("[MobilePositionEvent] 发送失败：  ", e);
+            }
         }
     }
 

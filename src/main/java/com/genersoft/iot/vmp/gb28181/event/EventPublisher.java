@@ -1,7 +1,10 @@
 package com.genersoft.iot.vmp.gb28181.event;
 
 import com.genersoft.iot.vmp.conf.UserSetting;
-import com.genersoft.iot.vmp.gb28181.bean.*;
+import com.genersoft.iot.vmp.gb28181.bean.CommonGBChannel;
+import com.genersoft.iot.vmp.gb28181.bean.DeviceAlarmNotify;
+import com.genersoft.iot.vmp.gb28181.bean.MobilePosition;
+import com.genersoft.iot.vmp.gb28181.bean.Platform;
 import com.genersoft.iot.vmp.gb28181.event.alarm.DeviceAlarmEvent;
 import com.genersoft.iot.vmp.gb28181.event.channel.ChannelEvent;
 import com.genersoft.iot.vmp.gb28181.event.device.DeviceOfflineEvent;
@@ -112,7 +115,13 @@ public class EventPublisher {
 
 	public void mobilePositionEventPublish(MobilePosition mobilePosition) {
 		MobilePositionEvent event = new MobilePositionEvent(this);
-		event.setMobilePosition(mobilePosition);
+		event.setMobilePositionList(List.of(mobilePosition));
+		applicationEventPublisher.publishEvent(event);
+	}
+
+	public void mobilePositionsEventPublish(List<? extends MobilePosition> mobilePositionList) {
+		MobilePositionEvent event = new MobilePositionEvent(this);
+		event.setMobilePositionList(mobilePositionList);
 		applicationEventPublisher.publishEvent(event);
 	}
 
@@ -122,4 +131,6 @@ public class EventPublisher {
 		event.setDeviceIds(deviceIds);
 		applicationEventPublisher.publishEvent(event);
     }
+
+
 }

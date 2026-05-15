@@ -5,6 +5,8 @@ import lombok.Getter;
 import lombok.Setter;
 import org.springframework.context.ApplicationEvent;
 
+import java.util.List;
+
 
 public class MobilePositionEvent extends ApplicationEvent {
     public MobilePositionEvent(Object source) {
@@ -13,5 +15,5 @@ public class MobilePositionEvent extends ApplicationEvent {
 
     @Getter
     @Setter
-    private MobilePosition mobilePosition;
+    private List<? extends MobilePosition> mobilePositionList;
 }

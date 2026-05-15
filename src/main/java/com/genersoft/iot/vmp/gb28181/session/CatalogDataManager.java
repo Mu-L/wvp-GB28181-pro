@@ -34,7 +34,7 @@ public class CatalogDataManager{
     private IGroupService groupService;
 
     @Autowired
-    private RedisTemplate<Object, Object> redisTemplate;
+    private RedisTemplate<String, Object> redisTemplate;
 
     private final Map<String, CatalogData> dataMap = new ConcurrentHashMap<>();
 
